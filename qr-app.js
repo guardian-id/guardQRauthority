@@ -10,29 +10,30 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Elemen DOM QR & Timer
     const qrcodeElement = document.getElementById("qrcode");
-    const qrcodeContainer = document.getElementById("qrcode-container");
     const countdownElement = document.getElementById("countdown");
     const timerBox = document.querySelector(".timer-box");
     const statusMsg = document.getElementById("statusMsg");
 
+    let timerInterval = null; // Menyimpan referensi interval global agar bisa di-clear dengan aman
+
     // Fokus otomatis & Navigasi Antar Kotak Input (6 Kotak)
     authInputs.forEach((input, index) => {
         input.addEventListener("input", (e) => {
-            // Hanya izinkan angka
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
-            // Lompat otomatis ke kanan jika kotak sudah terisi
             if (e.target.value.length === 1 && index < authInputs.length - 1) {
                 authInputs[index + 1].focus();
             }
         });
 
         input.addEventListener("keydown", (e) => {
-            // Mundur otomatis ke kiri jika menekan Backspace saat kolom kosong
             if (e.key === "Backspace" && !e.target.value && index > 0) {
                 authInputs[index - 1].focus();
             }
         });
     });
+
+    // Cek apakah ada sesi aktif di localStorage saat halaman pertama kali dimuat (antisipasi refresh)
+    checkActiveSession();
 
     // Event saat tombol verifikasi diklik oleh user
     btnVerify.addEventListener("click", async () => {
@@ -44,15 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Kunci UI saat pemrosesan request ke Power Automate
         btnVerify.disabled = true;
         btnVerify.innerText = "Memverifikasi...";
         statusMsg.style.display = "none";
 
-        // Susun payload JSON untuk dikirimkan ke Power Automate
-        const payload = {
-            inputCode: userCodeInput
-        };
+        const payload = { inputCode: userCodeInput };
 
         try {
             const response = await fetch(POWER_AUTOMATE_VERIFY_URL, {
@@ -61,23 +58,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify(payload)
             });
 
-            // JIKA POWER AUTOMATE MERESPON STATUS 200 (KODE COCOK)
             if (response.ok) {
                 const data = await response.json(); 
                 
-                // Memastikan data PIN dikirim balik oleh Power Automate
                 if (data.pin) {
+                    // Simpan pin dan kode terverifikasi ke localStorage agar tahan refresh
+                    localStorage.setItem("active_pin", data.pin);
+                    localStorage.setItem("verified_code", userCodeInput);
+
+                    // Pindah Halaman & Jalankan Timer
                     authSection.style.display = "none";
                     qrSection.style.display = "block";
 
-                    // Jalankan pembentukan QR Code dan aktifkan Timer 5 Menit
                     startQrAndTimer(data.pin, userCodeInput);
                 } else {
                     throw new Error("Respon server salah (PIN tidak ditemukan).");
                 }
-
             } else {
-                // JIKA POWER AUTOMATE MERESPON STATUS 400 (TEKS MENTAH ERROR)
                 const errorText = await response.text();
                 throw new Error(errorText || "Kode verifikasi salah atau sudah kedaluwarsa!");
             }
@@ -90,9 +87,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Fungsi memeriksa apakah user masih dalam masa sisa 5 menit saat page di-refresh
+    function checkActiveSession() {
+        const verifiedCode = localStorage.getItem("verified_code");
+        const activePin = localStorage.getItem("active_pin");
+        const startTime = localStorage.getItem(`qr_start_time_${verifiedCode}`);
+
+        if (verifiedCode && activePin && startTime) {
+            const duration = 5 * 60 * 1000;
+            const endTime = parseInt(startTime) + duration;
+            const now = new Date().getTime();
+
+            if (endTime - now > 0) {
+                // Sesi masih valid, langsung lempar ke halaman QR
+                authSection.style.display = "none";
+                qrSection.style.display = "block";
+                startQrAndTimer(activePin, verifiedCode);
+            } else {
+                // Sesi sudah mati saat ditinggal offline/refresh, bersihkan storage
+                clearAllSessionStorage(verifiedCode);
+            }
+        }
+    }
+
     // Fungsi Logika Utama Pembuat QR & Countdown Timer
     function startQrAndTimer(realPin, verifiedCode) {
-        // Ikat start time di localStorage menggunakan basis kode unik agar tidak reset saat refresh
+        // Bersihkan interval lama jika ada untuk mencegah memory leak / double timer
+        if (timerInterval) clearInterval(timerInterval);
+
         const storageKeyStartTime = `qr_start_time_${verifiedCode}`;
         let startTime = localStorage.getItem(storageKeyStartTime);
 
@@ -101,11 +123,11 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem(storageKeyStartTime, startTime);
         }
 
-        const duration = 5 * 60 * 1000; // 5 Menit (300.000 ms)
+        const duration = 5 * 60 * 1000; 
         const endTime = parseInt(startTime) + duration;
 
-        // Render QR Code langsung di layar menggunakan data PIN asli dari server
-        qrcodeElement.innerHTML = ""; // Bersihkan QR lama jika ada
+        // Render QR Code
+        qrcodeElement.innerHTML = ""; 
         new QRCode(qrcodeElement, {
             text: realPin,
             width: 150,
@@ -115,8 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
             correctLevel: QRCode.CorrectLevel.H
         });
 
-        // Loop interval perhitungan mundur per detik
-        const timerInterval = setInterval(() => {
+        // Loop interval per detik
+        timerInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = endTime - now;
 
@@ -133,33 +155,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 timerBox.classList.add("timer-expired");
             }
 
-            // --- KONDISI KETIKA WAKTU COUNTDOWN 5 MENIT HABIS ---
+            // --- KONDISI KETIKA WAKTU COUNTDOWN HABIS ---
             if (distance < 0) {
                 clearInterval(timerInterval);
                 
-                // 1. Hapus memori waktu lama di localStorage agar tidak bug di request berikutnya
-                localStorage.removeItem(storageKeyStartTime);
+                // 1. Bersihkan semua data session di localStorage
+                clearAllSessionStorage(verifiedCode);
                 
-                // 2. Kosongkan kembali seluruh 6 kotak input di halaman depan
+                // 2. Reset Form UI Kembali ke Awal
                 authInputs.forEach(input => input.value = "");
-                
-                // 3. Reset status tombol verifikasi ke kondisi awal
                 btnVerify.disabled = false;
                 btnVerify.innerText = "Buka QR Code";
                 
-                // 4. Tukar halaman: Sembunyikan QR, munculkan kembali form input kode
+                // 3. Tukar Halaman
                 qrSection.style.display = "none";
                 authSection.style.display = "block";
                 
-                // 5. Bersihkan sisa-sisa elemen visual QR & warna timer
+                // 4. Bersihkan Sisa Visual
                 countdownElement.innerText = "05:00";
                 qrcodeElement.innerHTML = ""; 
                 timerBox.classList.remove("timer-expired");
 
-                // 6. Tampilkan pesan peringatan merah di halaman utama input
+                // 5. Tampilkan Pesan Error
                 showStatusMessage("Waktu 5 menit habis! Sesi QR Code Anda telah kedaluwarsa, silakan masukkan kode kembali.");
             }
         }, 1000);
+    }
+
+    // Helper untuk membersihkan seluruh object localStorage terkait session ini
+    function clearAllSessionStorage(verifiedCode) {
+        localStorage.removeItem(`qr_start_time_${verifiedCode}`);
+        localStorage.removeItem("active_pin");
+        localStorage.removeItem("verified_code");
     }
 
     // Menampilkan pesan status/error di layar
