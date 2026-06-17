@@ -53,7 +53,7 @@ body {
 /* Flexbox untuk 6 Kotak Input */
 .otp-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* Diubah ke center agar pas di tengah */
     gap: 8px;
 }
 
