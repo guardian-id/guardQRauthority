@@ -130,8 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
         qrcodeElement.innerHTML = ""; 
         new QRCode(qrcodeElement, {
             text: realPin,
-            width: 150,
-            height: 150,
+            width: 220,
+            height: 220,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
