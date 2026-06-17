@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification & QR Token</title>
+    <link rel="stylesheet" href="qr-style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+    <div class="card">
+        <div id="auth-section">
+            <div class="header">
+                <h2>Verifikasi Akses</h2>
+                <p>Silakan masukkan 6 digit kode khusus yang dikirimkan ke WhatsApp Anda.</p>
+            </div>
+            <div class="form-group">
+                <div class="otp-container">
+                    <input type="text" class="auth-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" class="auth-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" class="auth-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" class="auth-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" class="auth-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" class="auth-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                </div>
+            </div>
+            <button id="btnVerify" class="btn-verify">Tampilkan QR</button>
+        </div>
+
+        <div id="qr-section" style="display: none;">
+            <div class="header">
+                <h2>QR Code Akses PIN</h2>
+                <p>Silakan scan QR Code di bawah ini untuk menggunakan PIN.</p>
+            </div>
+            <div id="qrcode-container">
+                <div id="qrcode"></div>
+            </div>
+            <div class="timer-box">
+                <p>Sisa Waktu Berlaku:</p>
+                <div id="countdown">05:00</div>
+            </div>
+        </div>
+
+        <div id="statusMsg" class="status-message"></div>
+    </div>
+
+    <script src="qr-app.js"></script>
+</body>
+</html>
