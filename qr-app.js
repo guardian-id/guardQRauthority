@@ -1,6 +1,9 @@
 // GANTI DENGAN URL HTTP TRIGGER DARI POWER AUTOMATE KEDUA ANDA
 const POWER_AUTOMATE_VERIFY_URL = "https://default9ec0d6c58a25418fb3841c77c55584.c2.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/01a09216cd654387bdff550c9dea3dfb/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YGW3DRKHlVHqxSlocw6tvDinaRmugAIywt_EHnicG-c";
 
+// Set durasi countdown menjadi 30 detik
+const COUNTDOWN_DURATION = 30 * 1000; 
+
 document.addEventListener("DOMContentLoaded", () => {
     // Elemen DOM Kontrol Halaman
     const authSection = document.getElementById("auth-section");
@@ -14,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const timerBox = document.querySelector(".timer-box");
     const statusMsg = document.getElementById("statusMsg");
 
-    let timerInterval = null; // Menyimpan referensi interval global agar bisa di-clear dengan aman
+    let timerInterval = null; 
 
     // Fokus otomatis & Navigasi Antar Kotak Input (6 Kotak)
     authInputs.forEach((input, index) => {
@@ -32,10 +35,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Cek apakah ada sesi aktif di localStorage saat halaman pertama kali dimuat (antisipasi refresh)
+    // Cek sesi aktif di localStorage saat pertama kali dimuat
     checkActiveSession();
 
-    // Event saat tombol verifikasi diklik oleh user
+    // Event saat tombol verifikasi diklik
     btnVerify.addEventListener("click", async () => {
         let userCodeInput = "";
         authInputs.forEach(input => userCodeInput += input.value);
@@ -60,19 +63,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (response.ok) {
                 const data = await response.json(); 
-                
-                if (data.pin) {
-                    // Simpan pin dan kode terverifikasi ke localStorage agar tahan refresh
-                    localStorage.setItem("active_pin", data.pin);
+                console.log("Data diterima dari Server:", data);
+
+                let extractedPin = null;
+
+                // Logika Adaptif Membaca Response JSON
+                if (data && data.pin) {
+                    extractedPin = data.pin;
+                } else if (data && data.body && data.body.pin) {
+                    extractedPin = data.body.pin;
+                }
+
+                if (extractedPin) {
+                    localStorage.setItem("active_pin", extractedPin);
                     localStorage.setItem("verified_code", userCodeInput);
 
-                    // Pindah Halaman & Jalankan Timer
                     authSection.style.display = "none";
                     qrSection.style.display = "block";
 
-                    startQrAndTimer(data.pin, userCodeInput);
+                    startQrAndTimer(extractedPin, userCodeInput);
                 } else {
-                    throw new Error("Respon server salah (PIN tidak ditemukan).");
+                    throw new Error("Format JSON tidak sesuai. Data: " + JSON.stringify(data));
                 }
             } else {
                 const errorText = await response.text();
@@ -83,36 +94,31 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Verification Error:", error);
             showStatusMessage(error.message);
             btnVerify.disabled = false;
-            btnVerify.innerText = "Buka QR Code";
+            btnVerify.innerText = "Tampilkan QR";
         }
     });
 
-    // Fungsi memeriksa apakah user masih dalam masa sisa 5 menit saat page di-refresh
     function checkActiveSession() {
         const verifiedCode = localStorage.getItem("verified_code");
         const activePin = localStorage.getItem("active_pin");
         const startTime = localStorage.getItem(`qr_start_time_${verifiedCode}`);
 
         if (verifiedCode && activePin && startTime) {
-            const duration = 5 * 60 * 1000;
-            const endTime = parseInt(startTime) + duration;
+            const endTime = parseInt(startTime) + COUNTDOWN_DURATION;
             const now = new Date().getTime();
 
             if (endTime - now > 0) {
-                // Sesi masih valid, langsung lempar ke halaman QR
                 authSection.style.display = "none";
                 qrSection.style.display = "block";
                 startQrAndTimer(activePin, verifiedCode);
             } else {
-                // Sesi sudah mati saat ditinggal offline/refresh, bersihkan storage
                 clearAllSessionStorage(verifiedCode);
             }
         }
     }
 
-    // Fungsi Logika Utama Pembuat QR & Countdown Timer
+    // Fungsi Utama Pembuat Barcode, QR, dan Timer
     function startQrAndTimer(realPin, verifiedCode) {
-        // Bersihkan interval lama jika ada untuk mencegah memory leak / double timer
         if (timerInterval) clearInterval(timerInterval);
 
         const storageKeyStartTime = `qr_start_time_${verifiedCode}`;
@@ -123,13 +129,48 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem(storageKeyStartTime, startTime);
         }
 
-        const duration = 5 * 60 * 1000; 
-        const endTime = parseInt(startTime) + duration;
+        const endTime = parseInt(startTime) + COUNTDOWN_DURATION;
 
-        // Render QR Code
+        // Pemisahan String PIN
+        let pinForQR = "";
+        let pinForBarcode = "";
+
+        if (realPin && realPin.includes('|')) {
+            const splitParts = realPin.split('|');
+            pinForQR = splitParts[0].trim();       
+            pinForBarcode = splitParts[1].trim();  
+        } else {
+            console.warn("Karakter '|' tidak ditemukan. Data asli:", realPin);
+            pinForQR = realPin;
+            pinForBarcode = "00000000"; 
+        }
+
+        // --- GENERATE BARCODE (MENGGUNAKAN CANVAS) ---
+        const barcodeCanvas = document.getElementById("barcode");
+        if (barcodeCanvas && typeof JsBarcode !== "undefined") {
+            try {
+                JsBarcode(barcodeCanvas, pinForBarcode, {
+                    format: "CODE128",
+                    width: 2.5,
+                    height: 75,
+                    displayValue: true, 
+                    fontSize: 14,
+                    margin: 10,
+                    background: "#ffffff",
+                    lineColor: "#000000"
+                });
+                console.log("Barcode berhasil di-render.");
+            } catch (barcodeError) {
+                console.error("Gagal menjalankan JsBarcode:", barcodeError);
+            }
+        } else {
+            console.error("Canvas objek tidak ditemukan atau library JsBarcode pincang.");
+        }
+
+        // --- GENERATE QR CODE ---
         qrcodeElement.innerHTML = ""; 
         new QRCode(qrcodeElement, {
-            text: realPin,
+            text: pinForQR,
             width: 220,
             height: 220,
             colorDark: "#000000",
@@ -137,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
             correctLevel: QRCode.CorrectLevel.H
         });
 
-        // Loop interval per detik
+        // Loop Countdown per Detik
         timerInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = endTime - now;
@@ -150,46 +191,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
             countdownElement.innerText = `${formattedMinutes}:${formattedSeconds}`;
 
-            // Jika waktu tinggal kurang dari 1 menit, ubah warna timer jadi merah
-            if (distance < 60000) {
+            if (distance < 10000) {
                 timerBox.classList.add("timer-expired");
             }
 
-            // --- KONDISI KETIKA WAKTU COUNTDOWN HABIS ---
+            // Kondisi Sesi Habis
             if (distance < 0) {
                 clearInterval(timerInterval);
-                
-                // 1. Bersihkan semua data session di localStorage
                 clearAllSessionStorage(verifiedCode);
                 
-                // 2. Reset Form UI Kembali ke Awal
                 authInputs.forEach(input => input.value = "");
                 btnVerify.disabled = false;
-                btnVerify.innerText = "Buka QR Code";
+                btnVerify.innerText = "Tampilkan QR";
                 
-                // 3. Tukar Halaman
                 qrSection.style.display = "none";
                 authSection.style.display = "block";
                 
-                // 4. Bersihkan Sisa Visual
-                countdownElement.innerText = "05:00";
+                countdownElement.innerText = "00:30";
                 qrcodeElement.innerHTML = ""; 
+                
+                // Hapus isi canvas barcode agar kembali bersih
+                if (barcodeCanvas) {
+                    const ctx = barcodeCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, barcodeCanvas.width, barcodeCanvas.height);
+                }
+                
                 timerBox.classList.remove("timer-expired");
-
-                // 5. Tampilkan Pesan Error
-                showStatusMessage("Waktu 5 menit habis! Sesi QR Code Anda telah kedaluwarsa, silakan masukkan kode kembali.");
+                showStatusMessage("Waktu 30 detik habis! Sesi Akses Anda telah kedaluwarsa, silakan masukkan kode kembali.");
             }
         }, 1000);
     }
 
-    // Helper untuk membersihkan seluruh object localStorage terkait session ini
     function clearAllSessionStorage(verifiedCode) {
         localStorage.removeItem(`qr_start_time_${verifiedCode}`);
         localStorage.removeItem("active_pin");
         localStorage.removeItem("verified_code");
     }
 
-    // Menampilkan pesan status/error di layar
     function showStatusMessage(message) {
         statusMsg.innerText = message;
         statusMsg.style.display = "block";
