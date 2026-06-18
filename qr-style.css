@@ -1,3 +1,6 @@
+/* ==========================================================================
+   RESET & BASE STYLES
+   ========================================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -11,16 +14,19 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 15px; /* Sedikit diperkecil agar lebih lega di HP */
 }
 
+/* ==========================================================================
+   CARD CONTAINER
+   ========================================================================== */
 .card {
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
-    padding: 30px;
+    padding: 30px 20px; /* Padding dinamis agar hemat ruang di layar kecil */
     text-align: center;
 }
 
@@ -37,29 +43,40 @@ body {
     margin-bottom: 25px;
 }
 
+/* ==========================================================================
+   FORM OPT INPUT (RESPONSIVE & CENTERED DI HP)
+   ========================================================================== */
 .otp-container {
     display: flex;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: center; /* Mengunci posisi 6 kotak tepat di tengah */
+    gap: 6px;                /* Jarak antar kotak yang pas untuk layar HP */
     margin-bottom: 25px;
+    width: 100%;             /* Memanfaatkan lebar penuh kartu */
 }
 
 .auth-input {
-    width: 45px;
-    height: 50px;
-    font-size: 20px;
+    width: 100%;             /* Fleksibel mengikuti lebar container */
+    max-width: 42px;         /* Batas maksimal lebar kotak di layar lebar */
+    height: 48px;            /* Tinggi kotak yang proporsional */
+    font-size: 18px;         /* Ukuran angka yang pas dan mudah dibaca */
     font-weight: bold;
     text-align: center;
     border: 2px solid #ddd;
     border-radius: 8px;
     outline: none;
-    transition: border-color 0.2s;
+    background-color: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none; /* Menghilangkan shadow/glare bawaan browser iOS */
 }
 
 .auth-input:focus {
     border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
 }
 
+/* ==========================================================================
+   BUTTONS & MESSAGES
+   ========================================================================== */
 .btn-verify {
     width: 100%;
     background-color: #007bff;
@@ -78,12 +95,25 @@ body {
     cursor: not-allowed;
 }
 
-/* Pengatur Layout Barcode dan QR Code */
+.status-message {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+    text-align: center;
+}
+
+/* ==========================================================================
+   DISPLAY CONTAINER (BARCODE & QR)
+   ========================================================================== */
 #qrcode-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 50px;
+    gap: 20px;
     margin: 25px 0;
     padding: 15px;
     background: #fdfdfd;
@@ -107,9 +137,11 @@ body {
     margin: 0 auto;
 }
 
-/* Pengatur Kotak Timer */
+/* ==========================================================================
+   TIMER COUNTDOWN
+   ========================================================================== */
 .timer-box {
-    background: #f4f4f7;
+    background: #f8f9fa;
     padding: 12px;
     border-radius: 8px;
     margin-top: 15px;
@@ -129,14 +161,4 @@ body {
 
 .timer-expired #countdown {
     color: #dc3545;
-}
-
-.status-message {
-    margin-top: 15px;
-    padding: 12px;
-    background-color: #f8d7da;
-    color: #721c24;
-    border-radius: 8px;
-    font-size: 14px;
-    display: none;
 }
