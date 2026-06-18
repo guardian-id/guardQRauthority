@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RESET & BASE STYLES
+   1. RESET & BASE STYLES
    ========================================================================== */
 * {
     box-sizing: border-box;
@@ -14,59 +14,69 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 15px; /* Sedikit diperkecil agar lebih lega di HP */
+    padding: 15px;
+    
+    /* Taktik Keamanan: Mencegah seleksi teks / copy di layar */
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none;     /* IE / Edge tua */
+    user-select: none;         /* Standar Modern */
 }
 
 /* ==========================================================================
-   CARD CONTAINER
+   2. CARD CONTAINER
    ========================================================================== */
 .card {
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 400px;
-    padding: 30px 20px; /* Padding dinamis agar hemat ruang di layar kecil */
+    max-width: 380px;         /* Dioptimalkan sedikit agar pas di genggaman HP */
+    padding: 30px 20px;       /* Padding seimbang agar hemat ruang horizontal */
     text-align: center;
+    overflow: hidden;
 }
 
 .header h2 {
     color: #333333;
-    font-size: 22px;
+    font-size: 21px;
     margin-bottom: 10px;
 }
 
 .header p {
     color: #666666;
-    font-size: 14px;
+    font-size: 13.5px;
     line-height: 1.5;
     margin-bottom: 25px;
 }
 
 /* ==========================================================================
-   FORM OPT INPUT (RESPONSIVE & CENTERED DI HP)
+   3. KOTAK INPUT 6 DIGIT (DIJAMIN PAS & RATA TENGAH DI HP)
    ========================================================================== */
 .otp-container {
-    display: flex;
-    justify-content: center; /* Mengunci posisi 6 kotak tepat di tengah */
-    gap: 6px;                /* Jarak antar kotak yang pas untuk layar HP */
-    margin-bottom: 25px;
-    width: 100%;             /* Memanfaatkan lebar penuh kartu */
+    display: grid;
+    /* Membagi ruang menjadi 6 kolom yang pasti sama besar */
+    grid-template-columns: repeat(6, minmax(0, 1fr)); 
+    gap: 6px;                 /* Celah antar kotak yang pas untuk jari */
+    margin: 0 auto 25px auto; /* Memaksa kontainer berada mutlak di tengah-tengah kartu */
+    width: 100%;             
+    max-width: 280px;         /* Mengunci lebar total agar aman di layar HP paling ramping */
+    padding: 0;
 }
 
 .auth-input {
-    width: 100%;             /* Fleksibel mengikuti lebar container */
-    max-width: 42px;         /* Batas maksimal lebar kotak di layar lebar */
-    height: 48px;            /* Tinggi kotak yang proporsional */
-    font-size: 18px;         /* Ukuran angka yang pas dan mudah dibaca */
+    width: 100%;              /* Mengikuti lebar kolom grid secara dinamis */
+    height: 45px;             /* Tinggi kotak yang ideal dan proporsional */
+    font-size: 18px;         
     font-weight: bold;
     text-align: center;
     border: 2px solid #ddd;
     border-radius: 8px;
     outline: none;
     background-color: #ffffff;
+    padding: 0;               /* Menghilangkan padding internal bawaan browser */
+    box-sizing: border-box;  
     transition: border-color 0.2s, box-shadow 0.2s;
-    -webkit-appearance: none; /* Menghilangkan shadow/glare bawaan browser iOS */
+    -webkit-appearance: none; /* Menghilangkan efek glossy/shadow bawaan iOS Safari */
 }
 
 .auth-input:focus {
@@ -75,7 +85,7 @@ body {
 }
 
 /* ==========================================================================
-   BUTTONS & MESSAGES
+   4. BUTTONS & STATUS MESSAGES
    ========================================================================== */
 .btn-verify {
     width: 100%;
@@ -107,7 +117,7 @@ body {
 }
 
 /* ==========================================================================
-   DISPLAY CONTAINER (BARCODE & QR)
+   5. DISPLAY CONTAINER (BARCODE & QR CODE)
    ========================================================================== */
 #qrcode-container {
     display: flex;
@@ -138,7 +148,7 @@ body {
 }
 
 /* ==========================================================================
-   TIMER COUNTDOWN
+   6. TIMER COUNTDOWN
    ========================================================================== */
 .timer-box {
     background: #f8f9fa;
