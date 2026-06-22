@@ -19,6 +19,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let timerInterval = null; 
 
+    // ========================================================
+    // LOGIKA PROTEKSI ANTI-SCREENSHOT (BLUR) UNTUK HP
+    // ========================================================
+    const bodyEl = document.body;
+
+    function amankanLayar() {
+        bodyEl.classList.add('screen-protected');
+    }
+
+    function bukaLayar() {
+        // Beri delay sedikit (100ms) agar efek transisi mata kembali normal terasa halus
+        setTimeout(() => {
+            bodyEl.classList.remove('screen-protected');
+        }, 100);
+    }
+
+    // Pemicu 1: Deteksi pengguna swipe aplikasi (Recent Apps) atau pindah tab browser
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            amankanLayar();
+        } else {
+            bukaLayar();
+        }
+    });
+
+    // Pemicu 2: Deteksi browser kehilangan fokus (misal: panel notifikasi HP ditarik ke bawah)
+    window.addEventListener("blur", amankanLayar);
+    window.addEventListener("focus", bukaLayar);
+
+    // Pemicu 3: Cadangan mitigasi untuk browser mobile spesifik (Sistem siklus halaman)
+    window.addEventListener("pagehide", amankanLayar);
+    window.addEventListener("pageshow", bukaLayar);
+    // ========================================================
+
     // Fokus otomatis & Navigasi Antar Kotak Input (6 Kotak)
     authInputs.forEach((input, index) => {
         input.addEventListener("input", (e) => {
@@ -157,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     fontSize: 14,
                     margin: 10,
                     background: "#ffffff",
-                    lineColor: "#000000"
+                    lineLine: "#000000"
                 });
                 console.log("Barcode berhasil di-render.");
             } catch (barcodeError) {
