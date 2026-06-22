@@ -9,7 +9,7 @@
 }
 
 body {
-    background-color: #f4f6f9;
+    background-color: #f4f6f9; /* Tetap abu-abu soft agar kartu (card) terlihat kontras */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -65,7 +65,7 @@ body {
 
 .auth-input {
     width: 100%;              /* Mengikuti lebar kolom grid secara dinamis */
-    height: 45px;             /* Tinggi kotak yang ideal dan proporsional */
+    height: 45px;              /* Tinggi kotak yang ideal dan proporsional */
     font-size: 18px;         
     font-weight: bold;
     text-align: center;
@@ -141,10 +141,13 @@ body {
 #barcode {
     max-width: 100%;
     height: auto;
+    pointer-events: none;     /* Keamanan tambahan: Barcode tidak bisa di-klik/tahan jari */
 }
 
 #qrcode img {
     margin: 0 auto;
+    pointer-events: none;     /* Keamanan tambahan: QR Code tidak bisa di-klik/tahan jari di HP */
+    -webkit-touch-callout: none; /* Mematikan menu pop-up simpan gambar di iOS Safari */
 }
 
 /* ==========================================================================
@@ -173,15 +176,12 @@ body {
     color: #dc3545;
 }
 
-/* Efek Blur Ekstrem saat Proteksi Aktif */
+/* ==========================================================================
+   7. SECURITY SCREEN PROTECTION (ANTI-SCREENSHOT)
+   ========================================================================== */
 .screen-protected {
-    filter: blur(35px) !important;
-    pointer-events: none !important; /* Mencegah user berinteraksi/klik saat blur */
-    user-select: none !important;    /* Mencegah teks di-copy */
-    transition: filter 0.1s ease-out;
-}
-
-/* Pastikan body memiliki background solid agar tidak tembus pandang */
-body {
-    background-color: #ffffff; /* Sesuai warna tema web Anda */
+    filter: blur(40px) !important;   /* Ditingkatkan ke 40px agar benar-benar buram total */
+    pointer-events: none !important; /* Mencegah user melakukan klik/interaksi saat blur */
+    user-select: none !important;    /* Menjamin teks tidak bisa disorot */
+    transition: filter 0.08s ease-out; /* Transisi dipercepat sedikit agar efek menutup kilat */
 }
