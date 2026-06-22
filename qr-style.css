@@ -172,3 +172,16 @@ body {
 .timer-expired #countdown {
     color: #dc3545;
 }
+
+/* Efek Blur Ekstrem saat Proteksi Aktif */
+.screen-protected {
+    filter: blur(35px) !important;
+    pointer-events: none !important; /* Mencegah user berinteraksi/klik saat blur */
+    user-select: none !important;    /* Mencegah teks di-copy */
+    transition: filter 0.1s ease-out;
+}
+
+/* Pastikan body memiliki background solid agar tidak tembus pandang */
+body {
+    background-color: #ffffff; /* Sesuai warna tema web Anda */
+}
